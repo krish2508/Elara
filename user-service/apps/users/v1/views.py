@@ -4,7 +4,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.core.auth import authenticate
-from .serializers import UpdateProfileSerializer, UserProfileSerializer
+from apps.users.models import ONBOARDING_FLOW, OnboardingStep
+from .serializers import CompleteProfileSerializer, UserProfileSerializer
 
 
 @api_view(["GET"])
@@ -20,22 +21,40 @@ def me(request: Request) -> Response:
     )
 
 
-@api_view(["PATCH"])
+@api_view(["POST"])
 @authenticate
-def update_me(request: Request) -> Response:
+def complete_profile(request: Request) -> Response:
     """
-    PATCH /v1/users/me/update/
-    Update the authenticated user's profile fields.
+    POST /v1/users/profile/
+
+    Onboarding step 1 — submit basic profile info.
+    Accepts: first_name, last_name, birth_date, gender, interested_in.
+    Advances onboarding_step from 0 (ACCOUNT_CREATED) → 1 (BASIC_PROFILE).
     """
-    serializer = UpdateProfileSerializer(request.user, data=request.data, partial=True)
+    user = request.user
+
+    if user.onboarding_step != OnboardingStep.ACCOUNT_CREATED:
+        return Response(
+            {
+                "detail": "Profile already completed.",
+                "current_onboarding_step": user.onboarding_step,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    serializer = CompleteProfileSerializer(user, data=request.data)
     if not serializer.is_valid():
         return Response(
             {"errors": serializer.errors},
             status=status.HTTP_422_UNPROCESSABLE_ENTITY,
         )
 
-    serializer.save()
+    # Save profile fields and advance to step 1
+    user = serializer.save(
+        onboarding_step=ONBOARDING_FLOW[OnboardingStep.ACCOUNT_CREATED]
+    )
+
     return Response(
-        UserProfileSerializer(request.user).data,
+        UserProfileSerializer(user).data,
         status=status.HTTP_200_OK,
     )

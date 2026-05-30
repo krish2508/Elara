@@ -132,16 +132,7 @@ class AuthService:
         if UserMainDetails.objects.filter(email=email).exists():
             raise ValueError("An account with this email already exists.")
 
-        # Split name gracefully — handle single-word names
-        parts = data["name"].strip().split(" ", 1)
-        first_name = parts[0]
-        last_name = parts[1] if len(parts) > 1 else ""
-
-        user = UserMainDetails(
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-        )
+        user = UserMainDetails(email=email)
         user.set_password(data["password"])  # bcrypt hash stored here
         user.save()
 
