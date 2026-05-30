@@ -4,27 +4,14 @@ from django.db import models
 
 
 class OnboardingStep(models.IntegerChoices):
-    """
-    Numeric onboarding steps. Signup sets the user to step 0 (account created).
-    Each subsequent screen increments the step until COMPLETED.
-
-    0 — Account created (just signed up)
-    1 — Basic profile  (name, gender, birth date)
-    2 — Photos         (upload at least one photo)
-    3 — Interests      (pick interest tags)
-    4 — Preferences    (interested_in, distance, age range, etc.)
-    5 — Completed      (onboarding done, enter the app)
-    """
-    ACCOUNT_CREATED       = 0, "Account Created"
-    BASIC_PROFILE         = 1, "Basic Profile"
-    PHOTOS                = 2, "Photos"
-    INTERESTS             = 3, "Interests"
-    PREFERENCES           = 4, "Preferences"
-    COMPLETED             = 5, "Completed"
+    ACCOUNT_CREATED = 0, "Account Created"
+    BASIC_PROFILE   = 1, "Basic Profile"
+    PHOTOS          = 2, "Photos"
+    INTERESTS       = 3, "Interests"
+    PREFERENCES     = 4, "Preferences"
+    COMPLETED       = 5, "Completed"
 
 
-# Maps each step to the next one in the flow.
-# Returns None when already at COMPLETED.
 ONBOARDING_FLOW: dict[int, int | None] = {
     OnboardingStep.ACCOUNT_CREATED: OnboardingStep.BASIC_PROFILE,
     OnboardingStep.BASIC_PROFILE:   OnboardingStep.PHOTOS,
@@ -36,11 +23,6 @@ ONBOARDING_FLOW: dict[int, int | None] = {
 
 
 class UserMainDetails(models.Model):
-    """
-    Core user profile table. Stores identity and profile data.
-    Authentication (password, tokens) lives in the accounts app.
-    """
-
     class GenderChoices(models.TextChoices):
         MALE = 'M', 'Male'
         FEMALE = 'F', 'Female'
@@ -72,15 +54,12 @@ class UserMainDetails(models.Model):
         max_length=1,
         choices=InterestedInChoices.choices,
         blank=True,
-        null=True,  # set during step 4 (Preferences)
+        null=True,
     )
-
     onboarding_step = models.IntegerField(
         choices=OnboardingStep.choices,
         default=OnboardingStep.ACCOUNT_CREATED,
     )
-
-    # bcrypt hash — includes algorithm + salt + hash, no separate salt column needed
     password_hash = models.CharField(max_length=255)
 
     class Meta:
@@ -91,28 +70,36 @@ class UserMainDetails(models.Model):
     def __str__(self):
         return f"{self.email} ({self.first_name} {self.last_name})"
 
-    def advance_onboarding(self) -> bool:
-        """
-        Move to the next onboarding step and save.
-        Returns True if advanced, False if already completed.
-        """
-        next_step = ONBOARDING_FLOW.get(self.onboarding_step)
-        if next_step is None:
-            return False
-        self.onboarding_step = next_step
-        self.save(update_fields=["onboarding_step", "updated_at"])
-        return True
-
     def set_password(self, raw_password: str) -> None:
-        """Hash raw_password with bcrypt (cost factor 12) and store it."""
         salt = bcrypt.gensalt(rounds=12)
         self.password_hash = bcrypt.hashpw(
             raw_password.encode("utf-8"), salt
         ).decode("utf-8")
 
     def check_password(self, raw_password: str) -> bool:
-        """Return True if raw_password matches the stored bcrypt hash."""
         return bcrypt.checkpw(
             raw_password.encode("utf-8"),
             self.password_hash.encode("utf-8"),
         )
+
+
+class UserPhoto(models.Model):
+    id          = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user        = models.ForeignKey(
+        UserMainDetails,
+        on_delete=models.CASCADE,
+        related_name="photos",
+    )
+    image_url   = models.URLField()
+    order_index = models.PositiveSmallIntegerField()
+    is_primary  = models.BooleanField(default=False)
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'user_photos'
+        ordering = ["order_index"]
+        verbose_name = 'User Photo'
+        verbose_name_plural = 'User Photos'
+
+    def __str__(self):
+        return f"Photo({self.user.email}, order={self.order_index})"

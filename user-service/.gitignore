@@ -26,3 +26,4 @@ venv.bak/
 *.njsproj
 *.sln
 *.sw?
+credentials/

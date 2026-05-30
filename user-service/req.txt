@@ -5,3 +5,4 @@ dj-database-url
 djangorestframework
 bcrypt
 PyJWT
+google-cloud-storage
