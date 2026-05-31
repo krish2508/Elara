@@ -6,3 +6,4 @@ djangorestframework
 bcrypt
 PyJWT
 google-cloud-storage
+google-generativeai

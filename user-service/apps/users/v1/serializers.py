@@ -10,12 +10,21 @@ class CompleteProfileSerializer(serializers.ModelSerializer):
         model = UserMainDetails
         fields = ["first_name", "last_name", "birth_date", "gender", "interested_in"]
         extra_kwargs = {
-            "first_name":    {"required": True},
-            "last_name":     {"required": True},
-            "birth_date":    {"required": True},
-            "gender":        {"required": True},
+            "first_name": {"required": True},
+            "last_name": {"required": True},
+            "birth_date": {"required": True},
+            "gender": {"required": True},
             "interested_in": {"required": True},
         }
+
+
+class BiographySerializer(serializers.ModelSerializer):
+    """Step 3 — biography."""
+
+    class Meta:
+        model = UserMainDetails
+        fields = ["biography"]
+        extra_kwargs = {"biography": {"required": True}}
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -24,9 +33,19 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserMainDetails
         fields = [
-            "id", "email", "first_name", "last_name", "phone_number",
-            "birth_date", "biography", "gender", "interested_in",
-            "onboarding_step", "is_verified", "created_at", "updated_at",
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "phone_number",
+            "birth_date",
+            "biography",
+            "gender",
+            "interested_in",
+            "onboarding_step",
+            "is_verified",
+            "created_at",
+            "updated_at",
         ]
         read_only_fields = fields
 

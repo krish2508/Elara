@@ -6,11 +6,14 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0002_usermaindetails_is_active_usermaindetails_password_hash_refreshtoken'),
+        (
+            "users",
+            "0002_usermaindetails_is_active_usermaindetails_password_hash_refreshtoken",
+        ),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='RefreshToken',
+            name="RefreshToken",
         ),
     ]

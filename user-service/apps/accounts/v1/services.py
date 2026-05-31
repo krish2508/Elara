@@ -26,7 +26,6 @@ from django.db import transaction
 from apps.accounts.models import RefreshToken
 from apps.users.models import UserMainDetails
 
-
 # ---------------------------------------------------------------------------
 # Constants (override via settings if needed)
 # ---------------------------------------------------------------------------
@@ -42,6 +41,7 @@ _DUMMY_HASH = b"$2b$12$aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _get_secret() -> str:
     secret = settings.SECRET_KEY
@@ -106,6 +106,7 @@ def _build_token_response(access: str, refresh: str) -> dict:
 # ---------------------------------------------------------------------------
 # Public service
 # ---------------------------------------------------------------------------
+
 
 class AuthService:
 
@@ -262,7 +263,9 @@ class AuthService:
             raise ValueError("Invalid refresh token.")
 
         jti = payload.get("jti")
-        updated = RefreshToken.objects.filter(jti=jti, revoked=False).update(revoked=True)
+        updated = RefreshToken.objects.filter(jti=jti, revoked=False).update(
+            revoked=True
+        )
         if not updated:
             raise ValueError("Token not found or already revoked.")
 

@@ -42,6 +42,7 @@ def authenticate(view_func):
 
     Returns 401 immediately if the token is missing, invalid, or expired.
     """
+
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         token = _extract_token(request)

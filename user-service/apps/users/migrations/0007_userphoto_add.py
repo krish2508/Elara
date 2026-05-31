@@ -8,25 +8,40 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0006_remove_usermaindetails_onboarding_stage_and_more'),
+        ("users", "0006_remove_usermaindetails_onboarding_stage_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='UserPhoto',
+            name="UserPhoto",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('image_url', models.URLField()),
-                ('order_index', models.PositiveSmallIntegerField()),
-                ('is_primary', models.BooleanField(default=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='photos', to='users.usermaindetails')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("image_url", models.URLField()),
+                ("order_index", models.PositiveSmallIntegerField()),
+                ("is_primary", models.BooleanField(default=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="photos",
+                        to="users.usermaindetails",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'User Photo',
-                'verbose_name_plural': 'User Photos',
-                'db_table': 'user_photos',
-                'ordering': ['order_index'],
+                "verbose_name": "User Photo",
+                "verbose_name_plural": "User Photos",
+                "db_table": "user_photos",
+                "ordering": ["order_index"],
             },
         ),
     ]

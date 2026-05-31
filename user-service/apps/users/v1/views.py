@@ -5,14 +5,20 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.core.auth import authenticate
+from apps.core.llm import call_llm
 from apps.users.v1.utils import get_photo_url, remove_photo, upload_photo
 from apps.users.models import ONBOARDING_FLOW, OnboardingStep, UserPhoto
-from .serializers import CompleteProfileSerializer, UserPhotoSerializer, UserProfileSerializer
-
+from .serializers import (
+    BiographySerializer,
+    CompleteProfileSerializer,
+    UserPhotoSerializer,
+    UserProfileSerializer,
+)
 
 # ---------------------------------------------------------------------------
 # Profile
 # ---------------------------------------------------------------------------
+
 
 @api_view(["GET"])
 @authenticate
@@ -30,7 +36,7 @@ def complete_profile(request: Request) -> Response:
     Advances onboarding_step: 0 → 1
     """
     user = request.user
-    current_onboarding_step= user.onboarding_step
+    current_onboarding_step = user.onboarding_step
     if ONBOARDING_FLOW.get(current_onboarding_step) != OnboardingStep.BASIC_PROFILE:
         return Response(
             {
@@ -42,15 +48,97 @@ def complete_profile(request: Request) -> Response:
 
     serializer = CompleteProfileSerializer(user, data=request.data)
     if not serializer.is_valid():
-        return Response({"errors": serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        return Response(
+            {"errors": serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
+        )
 
-    user = serializer.save(onboarding_step=ONBOARDING_FLOW[OnboardingStep.ACCOUNT_CREATED])
+    user = serializer.save(
+        onboarding_step=ONBOARDING_FLOW[OnboardingStep.ACCOUNT_CREATED]
+    )
     return Response(UserProfileSerializer(user).data)
+
+
+# ---------------------------------------------------------------------------
+# Biography
+# ---------------------------------------------------------------------------
+
+
+@api_view(["POST"])
+@authenticate
+def save_biography(request: Request) -> Response:
+    """
+    POST /v1/users/profile/biography/
+    Onboarding step 3 — save biography and advance.
+    Advances onboarding_step: 3 → 4
+    """
+    user = request.user
+    current_onboarding_step = user.onboarding_step
+    if ONBOARDING_FLOW.get(current_onboarding_step) != OnboardingStep.BIOGRAPHY:
+        return Response(
+            {
+                "detail": "Not at the biography onboarding step.",
+                "onboarding_step": user.onboarding_step,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    serializer = BiographySerializer(user, data=request.data)
+    if not serializer.is_valid():
+        return Response(
+            {"errors": serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
+        )
+
+    user = serializer.save(onboarding_step=OnboardingStep.BIOGRAPHY)
+    return Response(UserProfileSerializer(user).data)
+
+
+@api_view(["POST"])
+@authenticate
+def generate_biography(request: Request) -> Response:
+    """
+    POST /v1/users/profile/biography/generate/
+    Generate a biography suggestion using Gemini AI.
+    Does NOT save — returns the suggestion for the user to review/edit.
+
+    Optional body: { "hints": "loves hiking, software engineer, dog owner" }
+    """
+    user = request.user
+    hints = request.data.get("hints", "").strip()
+
+    # Build a prompt from what we know about the user
+    age = ""
+    if user.birth_date:
+        from datetime import date
+
+        age_years = (date.today() - user.birth_date).days // 365
+        age = f"{age_years}-year-old"
+
+    gender_label = user.get_gender_display() if user.gender else ""
+    name = user.first_name or "this person"
+
+    prompt_parts = [
+        f"Write a short, warm, and authentic dating app biography for {name}.",
+        f"They are a {age} {gender_label}." if age or gender_label else "",
+        f"Additional details: {hints}" if hints else "",
+        "Keep it under 50 words. First person. No hashtags. Sound natural and genuine.",
+    ]
+    prompt = " ".join(p for p in prompt_parts if p)
+
+    try:
+        suggestion = call_llm(prompt)
+    except Exception as exc:
+        return Response(
+            {"detail": f"AI generation failed: {str(exc)}"},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+    return Response({"biography": suggestion}, status=status.HTTP_200_OK)
 
 
 # ---------------------------------------------------------------------------
 # Photos
 # ---------------------------------------------------------------------------
+
 
 @api_view(["POST", "GET"])
 @authenticate
@@ -73,11 +161,15 @@ def photos(request: Request) -> Response:
     file = request.FILES.get("photo")
 
     if not file:
-        return Response({"detail": "No photo file provided."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"detail": "No photo file provided."}, status=status.HTTP_400_BAD_REQUEST
+        )
 
     content_type = file.content_type or "image/jpeg"
     if not content_type.startswith("image/"):
-        return Response({"detail": "File must be an image."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"detail": "File must be an image."}, status=status.HTTP_400_BAD_REQUEST
+        )
 
     last = user.photos.order_by("-order_index").first()
     order_index = (last.order_index + 1) if last else 0
@@ -104,7 +196,9 @@ def delete_photo_view(request: Request, photo_id: str) -> Response:
     try:
         photo = UserPhoto.objects.get(id=photo_id, user=request.user)
     except UserPhoto.DoesNotExist:
-        return Response({"detail": "Photo not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"detail": "Photo not found."}, status=status.HTTP_404_NOT_FOUND
+        )
 
     # Delete from GCS then from DB
     remove_photo(photo.image_url)
@@ -115,13 +209,14 @@ def delete_photo_view(request: Request, photo_id: str) -> Response:
     if remaining and not remaining.is_primary:
         remaining.is_primary = True
         remaining.save(update_fields=["is_primary"])
-    data={"details":"photo deleteed successfully}"}
-    return Response(data,status=status.HTTP_204_NO_CONTENT)
+    data = {"details": "photo deleteed successfully}"}
+    return Response(data, status=status.HTTP_204_NO_CONTENT)
 
 
 # ---------------------------------------------------------------------------
 # Onboarding — photos complete
 # ---------------------------------------------------------------------------
+
 
 @api_view(["POST"])
 @authenticate
@@ -139,7 +234,7 @@ def photos_complete(request: Request) -> Response:
             {"error": "At least 2 photos required", "photo_count": photo_count},
             status=status.HTTP_400_BAD_REQUEST,
         )
-    current_onboarding_step=user.onboarding_step
+    current_onboarding_step = user.onboarding_step
     if ONBOARDING_FLOW.get(current_onboarding_step) != OnboardingStep.PHOTOS:
         return Response(
             {

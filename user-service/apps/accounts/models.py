@@ -24,9 +24,9 @@ class RefreshToken(models.Model):
     ip_address = models.GenericIPAddressField(blank=True, null=True)
 
     class Meta:
-        db_table = 'refresh_tokens'
-        verbose_name = 'Refresh Token'
-        verbose_name_plural = 'Refresh Tokens'
+        db_table = "refresh_tokens"
+        verbose_name = "Refresh Token"
+        verbose_name_plural = "Refresh Tokens"
 
     def __str__(self):
         return f"RefreshToken(user={self.user.email}, jti={self.jti[:8]}…)"

@@ -6,13 +6,24 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0003_delete_refreshtoken'),
+        ("users", "0003_delete_refreshtoken"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='usermaindetails',
-            name='onboarding_stage',
-            field=models.CharField(choices=[('ACCOUNT_CREATED', 'Account Created'), ('PROFILE_COMPLETED', 'Profile Completed'), ('PHOTOS_UPLOADED', 'Photos Uploaded'), ('INTERESTS_SELECTED', 'Interests Selected'), ('PREFERENCES_SET', 'Preferences Set'), ('COMPLETED', 'Completed')], default='ACCOUNT_CREATED', max_length=30),
+            model_name="usermaindetails",
+            name="onboarding_stage",
+            field=models.CharField(
+                choices=[
+                    ("ACCOUNT_CREATED", "Account Created"),
+                    ("PROFILE_COMPLETED", "Profile Completed"),
+                    ("PHOTOS_UPLOADED", "Photos Uploaded"),
+                    ("INTERESTS_SELECTED", "Interests Selected"),
+                    ("PREFERENCES_SET", "Preferences Set"),
+                    ("COMPLETED", "Completed"),
+                ],
+                default="ACCOUNT_CREATED",
+                max_length=30,
+            ),
         ),
     ]
