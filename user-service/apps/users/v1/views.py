@@ -30,8 +30,8 @@ def complete_profile(request: Request) -> Response:
     Advances onboarding_step: 0 → 1
     """
     user = request.user
-
-    if user.onboarding_step != OnboardingStep.ACCOUNT_CREATED:
+    current_onboarding_step= user.onboarding_step
+    if ONBOARDING_FLOW.get(current_onboarding_step) != OnboardingStep.BASIC_PROFILE:
         return Response(
             {
                 "detail": "Profile already completed.",
