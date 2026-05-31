@@ -17,10 +17,12 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
 # ---------------------------------------------------------------------------
 
 INSTALLED_APPS = [
-    # No django.contrib.admin   — not a monolith, no admin panel needed
-    # No django.contrib.auth    — we use our own UserMainDetails + bcrypt
-    # No django.contrib.sessions — stateless JWT auth, no server-side sessions
-    "django.contrib.contenttypes",  # required by DRF internals
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles", 
     "apps.users",
     "apps.accounts",
     "rest_framework",
@@ -32,7 +34,28 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",  
+]
+
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ],
+        },
+    },
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -64,6 +87,19 @@ else:
     }
 
 # ---------------------------------------------------------------------------
+# Static Files  ✅ ADDED THIS SECTION
+# ---------------------------------------------------------------------------
+
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# ---------------------------------------------------------------------------
+# Default primary key
+# ---------------------------------------------------------------------------
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"  # ✅ ADDED THIS
+
+# ---------------------------------------------------------------------------
 # Internationalisation
 # ---------------------------------------------------------------------------
 
@@ -76,10 +112,8 @@ USE_TZ = True
 # JWT / Auth token settings
 # ---------------------------------------------------------------------------
 
-# Access token lifetime in seconds (default: 15 minutes)
 ACCESS_TOKEN_TTL_SECONDS: int = int(os.getenv("ACCESS_TOKEN_TTL_SECONDS", 15 * 60))
 
-# Refresh token lifetime in seconds (default: 7 days)
 REFRESH_TOKEN_TTL_SECONDS: int = int(
     os.getenv("REFRESH_TOKEN_TTL_SECONDS", 7 * 24 * 3600)
 )
@@ -89,13 +123,11 @@ REFRESH_TOKEN_TTL_SECONDS: int = int(
 # ---------------------------------------------------------------------------
 
 REST_FRAMEWORK = {
-    # No authentication or permission classes from Django's auth system —
-    # we handle auth ourselves via the @authenticate decorator in apps.core.auth
     "DEFAULT_AUTHENTICATION_CLASSES": [],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
     ],
-    "UNAUTHENTICATED_USER": None,  # don't use django.contrib.auth.AnonymousUser
+    "UNAUTHENTICATED_USER": None,
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
     ],

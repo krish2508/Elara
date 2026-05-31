@@ -318,7 +318,7 @@ def select_interests(request: Request) -> Response:
     )
 
     # Advance onboarding
-    user.onboarding_step = ONBOARDING_FLOW[OnboardingStep.INTERESTS]
+    user.onboarding_step = OnboardingStep.INTERESTS
     user.save(update_fields=["onboarding_step", "updated_at"])
 
     return Response(
