@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.users.models import UserMainDetails, UserPhoto
+from apps.users.models import InterestMaster, UserMainDetails, UserPhoto
 
 
 class CompleteProfileSerializer(serializers.ModelSerializer):
@@ -55,3 +55,17 @@ class UserPhotoSerializer(serializers.ModelSerializer):
         model = UserPhoto
         fields = ["id", "image_url", "order_index", "is_primary", "created_at"]
         read_only_fields = fields
+
+
+class InterestMasterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InterestMaster
+        fields = ["id", "name", "emoji", "category"]
+
+
+class SelectInterestsSerializer(serializers.Serializer):
+    interest_ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        min_length=5,
+        error_messages={"min_length": "Select at least 5 interests."},
+    )

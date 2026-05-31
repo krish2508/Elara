@@ -21,4 +21,6 @@ urlpatterns = [
         views.photos_complete,
         name="v1-onboarding-photos-complete",
     ),
+    # Interests
+    path("interests/", views.interests, name="v1-interests"),
 ]

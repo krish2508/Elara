@@ -105,3 +105,56 @@ class UserPhoto(models.Model):
 
     def __str__(self):
         return f"Photo({self.user.email}, order={self.order_index})"
+
+
+class InterestMaster(models.Model):
+    """
+    Platform-seeded master list of all available interests.
+    e.g. Hiking, Photography, Cooking, Gaming, Travel ...
+    """
+    id        = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name      = models.CharField(max_length=100, unique=True)
+    emoji     = models.CharField(max_length=10, blank=True)   # e.g. "🏔️"
+    category  = models.CharField(max_length=100, blank=True)  # e.g. "Outdoors", "Arts"
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "interest_master"
+        ordering = ["category", "name"]
+        verbose_name = "Interest"
+        verbose_name_plural = "Interests"
+
+    def __str__(self):
+        return f"{self.emoji} {self.name}".strip()
+
+
+class UserInterest(models.Model):
+    """
+    Interests selected by a user.
+    Explicit join table so metadata (selected_at, etc.) can be added later.
+    """
+    id          = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user        = models.ForeignKey(
+        UserMainDetails,
+        on_delete=models.CASCADE,
+        related_name="interests",
+    )
+    interest    = models.ForeignKey(
+        InterestMaster,
+        on_delete=models.CASCADE,
+        related_name="user_interests",
+    )
+    selected_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "user_interests"
+        unique_together = [("user", "interest")]
+        indexes = [
+            models.Index(fields=["user"], name="idx_user_interests_user"),
+        ]
+        verbose_name = "User Interest"
+        verbose_name_plural = "User Interests"
+
+    def __str__(self):
+        return f"{self.user.email} → {self.interest.name}"
