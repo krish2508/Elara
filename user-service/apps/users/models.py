@@ -158,3 +158,40 @@ class UserInterest(models.Model):
 
     def __str__(self):
         return f"{self.user.email} → {self.interest.name}"
+
+
+class UserPreference(models.Model):
+    """
+    User's dating preferences — age range, distance, relationship goal.
+    One-to-one with UserMainDetails.
+    """
+
+    class RelationshipGoal(models.TextChoices):
+        LONG_TERM = "LONG_TERM", "Long-term relationship"
+        CASUAL    = "CASUAL", "Casual dating"
+        MARRIAGE  = "MARRIAGE", "Marriage"
+        EXPLORING = "EXPLORING", "Exploring"
+
+    user = models.OneToOneField(
+        UserMainDetails,
+        on_delete=models.CASCADE,
+        related_name="preferences",
+    )
+    min_age            = models.PositiveSmallIntegerField()
+    max_age            = models.PositiveSmallIntegerField()
+    max_distance_km    = models.PositiveSmallIntegerField()
+    relationship_goal  = models.CharField(
+        max_length=20,
+        choices=RelationshipGoal.choices,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "user_preferences"
+        verbose_name = "User Preference"
+        verbose_name_plural = "User Preferences"
+
+    def __str__(self):
+        return f"Preferences({self.user.email})"
+

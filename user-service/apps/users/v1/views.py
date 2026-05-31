@@ -16,11 +16,13 @@ from apps.users.models import (
     OnboardingStep,
     UserInterest,
     UserPhoto,
+    UserPreference,
 )
 from .serializers import (
     BiographySerializer,
     CompleteProfileSerializer,
     InterestMasterSerializer,
+    PreferenceSerializer,
     SelectInterestsSerializer,
     UserPhotoSerializer,
     UserProfileSerializer,
@@ -325,6 +327,63 @@ def select_interests(request: Request) -> Response:
         {
             "onboarding_step": user.onboarding_step,
             "interests": InterestMasterSerializer(valid_interests, many=True).data,
+        },
+        status=status.HTTP_200_OK,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Preferences
+# ---------------------------------------------------------------------------
+
+
+@api_view(["POST"])
+@authenticate
+@transaction.atomic
+def save_preferences(request: Request) -> Response:
+    """
+    POST /v1/users/preferences/
+    Onboarding step 5 → 6 (PREFERENCES → COMPLETED).
+
+    Body: {
+      "min_age": 25,
+      "max_age": 35,
+      "max_distance_km": 50,
+      "relationship_goal": "LONG_TERM"
+    }
+    """
+    user = request.user
+
+    error = _check_onboarding_step(user, OnboardingStep.PREFERENCES)
+    if error:
+        return error
+
+    # Check if preferences already exist (update) or create new
+    try:
+        preferences = user.preferences
+        serializer = PreferenceSerializer(preferences, data=request.data)
+    except UserPreference.DoesNotExist:
+        serializer = PreferenceSerializer(data=request.data)
+
+    if not serializer.is_valid():
+        return Response(
+            {"errors": serializer.errors}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
+        )
+
+    # Save preferences
+    if hasattr(user, "preferences"):
+        serializer.save()
+    else:
+        serializer.save(user=user)
+
+    # Advance onboarding to COMPLETED
+    user.onboarding_step = OnboardingStep.PREFERENCES
+    user.save(update_fields=["onboarding_step", "updated_at"])
+
+    return Response(
+        {
+            "onboarding_step": user.onboarding_step,
+            "preferences": serializer.data,
         },
         status=status.HTTP_200_OK,
     )

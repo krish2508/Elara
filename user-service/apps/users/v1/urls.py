@@ -23,4 +23,6 @@ urlpatterns = [
     ),
     # Interests
     path("interests/", views.interests, name="v1-interests"),
+    
+    path("users/preferences/", views.save_preferences, name="v1-users-preferences"),
 ]
